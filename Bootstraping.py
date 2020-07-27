@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
-MAIN_DATA_DIRECTORY_PATH = '/Users/yishaiazabary/Desktop/My Career/OriAvinoamSimulation/Data'
+MAIN_DATA_DIRECTORY_PATH = '/Users/yishaiazabary/PycharmProjects/MucsleCellFusionSimulation/Data'
 
 
 class BootstrappingPerExperiment:
@@ -20,11 +20,12 @@ class BootstrappingPerExperiment:
         self.simulations_dist_averages = np.ndarray(self.frame_num)
         self.p_values_per_frame = np.zeros(frame_num)
         entire_exp_df = pd.read_csv(self.path_to_true_exp_file)
-        sum_of_totals = entire_exp_df.loc[:, 'CTRn=1'].values + \
-                        entire_exp_df.loc[:, 'CTRn=2'].values + \
-                        entire_exp_df.loc[:, 'CTRn=3'].values + \
-                        entire_exp_df.loc[:, 'CTRn=4'].values
-        self.exp_data_points_normalized = entire_exp_df.loc[:, self.col_to_calc_by].values / sum_of_totals
+        # sum_of_totals = entire_exp_df.loc[:, 'CTRn=1'].values + \
+        #                 entire_exp_df.loc[:, 'CTRn=2'].values + \
+        #                 entire_exp_df.loc[:, 'CTRn=3'].values + \
+        #                 entire_exp_df.loc[:, 'CTRn=4'].values
+        self.initial_number_of_nuclei = np.max(entire_exp_df.loc[:, 'CTRn=1'].values)
+        self.exp_data_points_normalized = entire_exp_df.loc[:, self.col_to_calc_by].values / self.initial_number_of_nuclei
 
     def read_simulations_col_data_points(self):
         files = (file for file in os.listdir(self.path_to_simulations_directory)
@@ -33,13 +34,13 @@ class BootstrappingPerExperiment:
         for filename in files:
             if filename.endswith('.csv'):
                 path_to_single_file = os.sep.join([self.path_to_simulations_directory, filename])
-                entire_df =  pd.read_csv(path_to_single_file)
-                single_file_col_data =entire_df.loc[:, self.col_to_calc_by].values
-                sum_of_totals = entire_df.loc[:, 'CTRn=1'].values + \
-                                entire_df.loc[:, 'CTRn=2'].values + \
-                                entire_df.loc[:, 'CTRn=3'].values + \
-                                entire_df.loc[:, 'CTRn=4'].values
-                single_file_data_normalized = single_file_col_data / sum_of_totals
+                entire_df = pd.read_csv(path_to_single_file)
+                single_file_col_data = entire_df.loc[:, self.col_to_calc_by].values
+                # sum_of_totals = entire_df.loc[:, 'CTRn=1'].values + \
+                #                 entire_df.loc[:, 'CTRn=2'].values + \
+                #                 entire_df.loc[:, 'CTRn=3'].values + \
+                #                 entire_df.loc[:, 'CTRn=4'].values
+                single_file_data_normalized = single_file_col_data / self.initial_number_of_nuclei
                 self.all_simulations_data_points[idx] = single_file_data_normalized
                 idx += 1
 
@@ -91,14 +92,61 @@ class BootstrappingPerExperiment:
         fig.savefig(path_to_plot, dpi=300)
 
 
-for exp_prefix in ['200203_S17', '200203_S19', '200203_S22', '200203_S24', '200604_S06', '200604_S09']:
-    # exp_prefix = '200604_S09'
-    type_of_simulation = 'weighted'
-    col_to_calc_by = 'CTRn=4'
-    number_of_replications = 1000
-    frame_num = 16
+def plot_experiments_pvalues(exp_prefixes):
 
-    bspe = BootstrappingPerExperiment(exp_prefix, type_of_simulation, col_to_calc_by, number_of_replications, frame_num)
-    bspe.read_simulations_col_data_points()
-    bspe.calc_p_values_per_frame()
-    bspe.plot_col_data_with_p_values()
+    types = ['randoms', 'weighted']
+
+    coding = ['g+', 'rx', 'b*', 'c,', 'y>', 'm<', 'k^']
+    for art_idx, sim_type in enumerate(types):
+#         read p-values file
+        fig, ax = plt.subplots()
+        lines_and_legends = {}
+        for exp_idx, exp_prefix in enumerate(exp_prefixes):
+            path_to_np_file = os.sep.join([MAIN_DATA_DIRECTORY_PATH, exp_prefix, '{0}_{1}_pvals.npy'.format(exp_prefix, sim_type)])
+            p_vals = np.load(path_to_np_file)
+            ax.plot(p_vals, coding[exp_idx], alpha=0.5)
+            lines_and_legends['Exp:{}'.format(exp_prefix)] = coding[exp_idx]
+        ax.set_title('Bootstrap P-Values Comparison\nof Simulation Type:{0}\n'.format(sim_type))
+        ax.set_ylabel('p-value')
+        ax.set_xlabel('time (h)')
+        art_idx = 0
+        artist_patches = []
+        for leg_label, ax_coding in lines_and_legends.items():
+            artist_patches.append(mlines.Line2D([], [],
+                                                color=ax_coding[:1],
+                                                marker=ax_coding[1:],
+                                                label=leg_label))
+            art_idx += 1
+        ax.legend(handles=artist_patches, loc=6)
+        plt.show()
+        path_to_plot = os.sep.join([MAIN_DATA_DIRECTORY_PATH, '{0}_{1}.png'.format(sim_type, 'pvalues')])
+        fig.savefig(path_to_plot, dpi=300)
+
+
+plot_experiments_pvalues(['200203_S17', '200203_S19', '200203_S22'])#, '200203_S24', '200604_S06', '200604_S09'])
+#
+# for exp_prefix in ['200203_S17', '200203_S19', '200203_S22', '200203_S24', '200604_S06', '200604_S09']:
+#     # randoms
+#     type_of_simulation = 'randoms'
+#     col_to_calc_by = 'CTR4total'
+#     number_of_replications = 1000
+#     frame_num = 16
+#
+#     bspe = BootstrappingPerExperiment(exp_prefix, type_of_simulation, col_to_calc_by, number_of_replications, frame_num)
+#     bspe.read_simulations_col_data_points()
+#     bspe.calc_p_values_per_frame()
+#     bspe.plot_col_data_with_p_values()
+#     # save p-values as numpy array
+#     np.save(os.sep.join([MAIN_DATA_DIRECTORY_PATH, exp_prefix, '{0}_{1}_pvals'.format(exp_prefix, type_of_simulation)]),
+#             bspe.p_values_per_frame)
+# #     weighted
+#     type_of_simulation = 'weighted'
+#
+#     bspe = BootstrappingPerExperiment(exp_prefix, type_of_simulation, col_to_calc_by, number_of_replications, frame_num)
+#     bspe.read_simulations_col_data_points()
+#     bspe.calc_p_values_per_frame()
+#     bspe.plot_col_data_with_p_values()
+#     # save p-values as numpy array
+#     np.save(os.sep.join([MAIN_DATA_DIRECTORY_PATH, exp_prefix, '{0}_{1}_pvals'.format(exp_prefix, type_of_simulation)]),
+#             bspe.p_values_per_frame)
+#

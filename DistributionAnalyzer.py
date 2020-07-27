@@ -45,10 +45,11 @@ def plot_exp_vs_simulations(exp_directory_path, ctrs_to_plot: [str]):
     lines_and_legends = {}
     for idx, ctr_to_plot in enumerate(ctrs_to_plot):
         for key, df in context_dfs.items():
-            sum_of_totals = df.loc[:, 'CTRn=1'].values + \
-                            df.loc[:, 'CTRn=2'].values + \
-                            df.loc[:, 'CTRn=3'].values + \
-                            df.loc[:, 'CTRn=4'].values
+            # sum_of_totals = df.loc[:, 'CTRn=1'].values + \
+            #                 df.loc[:, 'CTRn=2'].values + \
+            #                 df.loc[:, 'CTRn=3'].values + \
+            #                 df.loc[:, 'CTRn=4'].values
+            initial_number_of_nuclei = np.max(df.loc[:, 'CTRn=1'].values)
             coding = ''
             # coding = colors[ctr_to_plot]
             policy = ''
@@ -65,7 +66,7 @@ def plot_exp_vs_simulations(exp_directory_path, ctrs_to_plot: [str]):
                 coding += marker_types['true']
                 policy = 'true experiment'
             # with 1
-            normalized = df.loc[:, ctr_to_plot].values/sum_of_totals
+            normalized = df.loc[:, ctr_to_plot].values/initial_number_of_nuclei
             # without 1
             if ctr_to_plot == 'CTRn=1':
                 continue
@@ -84,8 +85,8 @@ def plot_exp_vs_simulations(exp_directory_path, ctrs_to_plot: [str]):
                                             marker=coding[1:],
                                             label=leg_label))
     ax.legend(handles=artist_patches, loc=2)
-    # plt.show()
-    fig.savefig('/Users/yishaiazabary/Desktop/My Career/OriAvinoamSimulation/Data/{}/{}only_n=4.png'.format('_'.join(exp_prefix.split(' ')),'_'.join(exp_prefix.split(' '))))
+    plt.show()
+    # fig.savefig('/Users/yishaiazabary/Desktop/My Career/OriAvinoamSimulation/Data/{}/{}only_n=4.png'.format('_'.join(exp_prefix.split(' ')),'_'.join(exp_prefix.split(' '))))
 
 
 def plot_heatmaps(n1_values, n2_values, n3_values, n4_values, enable_log, exp_prefix, frames_labels):
@@ -254,5 +255,5 @@ def all_directory(directory_path: str):
 
 
 # all_directory('/Users/yishaiazabary/Desktop/My Career/OriAvinoamSimulation/Data/200203_S17')
-plot_exp_vs_simulations(exp_directory_path='/Users/yishaiazabary/Desktop/My Career/OriAvinoamSimulation/Data/200604_S09',
-                        ctrs_to_plot=['CTRn=4'])
+plot_exp_vs_simulations(exp_directory_path='/Users/yishaiazabary/PycharmProjects/MucsleCellFusionSimulation/Data/200203_S17',
+                        ctrs_to_plot=['CTR4total'])
